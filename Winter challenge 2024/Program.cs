@@ -4,6 +4,15 @@ using System.IO;
 using System.Text;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+
+public enum Direction
+{
+    N,
+    S,
+    E,
+    W
+}
 
 class Entity
 {
@@ -33,6 +42,18 @@ class Entity
         return Util.Distance(x, e.x, y, e.y);
     }
 
+    public IEnumerable<(int x, int y, Direction d)> GetAdjacent()
+    {
+        return GetAdjacentUnfiltered().Where(x => Util.InBounds(x.Item1, x.Item2));
+    }
+    private IEnumerable<(int x, int y, Direction d)> GetAdjacentUnfiltered()
+    {
+        yield return (x + 1, y, Direction.E);
+        yield return (x - 1, y, Direction.W);
+        yield return (x, y + 1, Direction.S);
+        yield return (x, y - 1, Direction.N);
+    }
+
 }
 public enum EntityType : int
 {
@@ -43,11 +64,35 @@ public enum EntityType : int
     Harvester = 4
 }
 
-class Util
+public static class Util
 {
+    public static int width, height;
+
     public static int Distance(int x1, int x2, int y1, int y2)
     {
         return Math.Abs(x1 - x2) + Math.Abs(y1 - y2);
+    }
+
+    public static bool InBounds(int x, int y)
+    {
+        return x >= 0 && x < width && y >= 0 && y < height;
+    }
+
+    public static Direction Inverse(this Direction d)
+    {
+        switch (d)
+        {
+            case Direction.N:
+                return Direction.S;
+            case Direction.S:
+                return Direction.N;
+            case Direction.E:
+                return Direction.W;
+            case Direction.W:
+                return Direction.E;
+            default:
+                throw new ArgumentException();
+        }
     }
 }
 class Player
@@ -60,7 +105,8 @@ class Player
         inputs = Console.ReadLine().Split(' ');
         int width = int.Parse(inputs[0]); // columns in the game grid
         int height = int.Parse(inputs[1]); // rows in the game grid
-
+        Util.width = width;
+        Util.height = height;
         // game loop
         while (true)
         {
@@ -96,11 +142,24 @@ class Player
                 var resourcesA = entities.Where(e => e.type == "A");
                 var myOrgangs = entities.Where(e => e.owner == 1 && (e.type == "ROOT" || e.type == "BASIC"));
 
+
                 var organResourceDistance = resourcesA.SelectMany(resource => myOrgangs.Select(organ => (res: resource, organ: organ, distance: organ.DistanceTo(resource))));
-                if(organResourceDistance.Any())
+                if(organResourceDistance.Any() && myC == 1 && myD == 1)
                 {
-                    var best = organResourceDistance.MinBy(x => x.distance);
-                    Console.WriteLine($"GROW {best.organ.organId} {best.res.x} {best.res.y} BASIC");
+                    if(organResourceDistance.Any(x => x.distance == 2))
+                    {
+                        var canBuildHarvertFrom = organResourceDistance.FirstOrDefault(x => x.distance == 2);
+                        var res = canBuildHarvertFrom.res;
+                        var from = canBuildHarvertFrom.organ;
+
+                        var buildCell = res.GetAdjacent().Where(adjFrom => from.GetAdjacent().Any(adjRes => adjFrom.x == adjRes.x && adjFrom.y == adjRes.y)).First();
+                        Console.WriteLine($"GROW {from.organId} {buildCell.x} {buildCell.y} HARVESTER {buildCell.d.Inverse()}");
+                    }
+                    else
+                    {
+                        var best = organResourceDistance.MinBy(x => x.distance);
+                        Console.WriteLine($"GROW {best.organ.organId} {best.res.x} {best.res.y} BASIC");
+                    }
                 }else
                 {
                     var possibleCoords = myOrgangs.SelectMany(organ => new[] { ( organ.x + 1, organ.y, organ), (organ.x, organ.y + 1, organ), (organ.x - 1, organ.y, organ), (organ.x, organ.y -1, organ) });
