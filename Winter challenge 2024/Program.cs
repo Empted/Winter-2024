@@ -42,16 +42,16 @@ class Entity
         return Util.Distance(x, e.x, y, e.y);
     }
 
-    public IEnumerable<(int x, int y, Direction d)> GetAdjacent()
+    public IEnumerable<(int x, int y, Direction d, Entity parent)> GetAdjacent()
     {
         return GetAdjacentUnfiltered().Where(x => Util.InBounds(x.Item1, x.Item2));
     }
-    private IEnumerable<(int x, int y, Direction d)> GetAdjacentUnfiltered()
+    private IEnumerable<(int x, int y, Direction d, Entity parent)> GetAdjacentUnfiltered()
     {
-        yield return (x + 1, y, Direction.E);
-        yield return (x - 1, y, Direction.W);
-        yield return (x, y + 1, Direction.S);
-        yield return (x, y - 1, Direction.N);
+        yield return (x + 1, y, Direction.E, this);
+        yield return (x - 1, y, Direction.W, this);
+        yield return (x, y + 1, Direction.S, this);
+        yield return (x, y - 1, Direction.N, this);
     }
 
 }
@@ -140,12 +140,13 @@ class Player
             for (int i = 0; i < requiredActionsCount; i++)
             {
                 var resourcesA = entities.Where(e => e.type == "A");
-                var myOrgangs = entities.Where(e => e.owner == 1 && (e.type == "ROOT" || e.type == "BASIC"));
+                var myOrgangs = entities.Where(e => e.owner == 1);
 
 
                 var organResourceDistance = resourcesA.SelectMany(resource => myOrgangs.Select(organ => (res: resource, organ: organ, distance: organ.DistanceTo(resource))));
                 if(organResourceDistance.Any() && myC == 1 && myD == 1)
                 {
+                    Console.Error.WriteLine("GATHERING RESOURCE");
                     if(organResourceDistance.Any(x => x.distance == 2))
                     {
                         var canBuildHarvertFrom = organResourceDistance.FirstOrDefault(x => x.distance == 2);
@@ -162,16 +163,33 @@ class Player
                     }
                 }else
                 {
-                    var possibleCoords = myOrgangs.SelectMany(organ => new[] { ( organ.x + 1, organ.y, organ), (organ.x, organ.y + 1, organ), (organ.x - 1, organ.y, organ), (organ.x, organ.y -1, organ) });
-                    possibleCoords = possibleCoords.Where(coord => !entities.Any(w => w.x == coord.Item1 && w.y == coord.Item2) && coord.Item1 >= 0 && coord.Item1 < width && coord.Item2 >= 0 && coord.Item2 < height);
-                    if(!possibleCoords.Any())
-                    {
-                        Console.WriteLine("WAIT");
+                    var enemyEntities = entities.Where(e => e.owner == 0);
 
+                    var enemyAdjacent = enemyEntities.SelectMany(e => e.GetAdjacent()).Where(adj => !entities.Any(e => e.x == adj.x && e.y == adj.y)).Distinct();
+                    var myAdjacent = myOrgangs.SelectMany(e => e.GetAdjacent()).Where(adj => !entities.Any(e => e.x == adj.x && e.y == adj.y)).Distinct();
+                    var adjacent = enemyAdjacent.SelectMany(enemy => myAdjacent.Where(my => Util.Distance(enemy.x, my.x, enemy.y, my.y) == 1).Select(my => (my: my, enemy: enemy, d: enemy.d.Inverse())));
+                    
+                    if(adjacent.Any())
+                    {
+                        Console.Error.WriteLine("DEFENDING SPACE");
+                        var best = adjacent.First();
+                        Console.WriteLine($"GROW {best.my.parent.organId} {best.enemy.x} {best.enemy.y} TENTACLE {best.d}");
                     }else
                     {
-                        var best = possibleCoords.FirstOrDefault();
-                        Console.WriteLine($"GROW {best.organ.organId} {best.Item1} {best.Item2} BASIC");
+                        Console.Error.WriteLine("FREE GROWING");
+
+                        var possibleCoords = myOrgangs.SelectMany(organ => new[] { (organ.x + 1, organ.y, organ), (organ.x, organ.y + 1, organ), (organ.x - 1, organ.y, organ), (organ.x, organ.y - 1, organ) });
+                        possibleCoords = possibleCoords.Where(coord => !entities.Any(w => w.x == coord.Item1 && w.y == coord.Item2) && coord.Item1 >= 0 && coord.Item1 < width && coord.Item2 >= 0 && coord.Item2 < height);
+                        if (!possibleCoords.Any())
+                        {
+                            Console.WriteLine("WAIT");
+
+                        }
+                        else
+                        {
+                            var best = possibleCoords.FirstOrDefault();
+                            Console.WriteLine($"GROW {best.organ.organId} {best.Item1} {best.Item2} BASIC");
+                        }
                     }
                 }
 
