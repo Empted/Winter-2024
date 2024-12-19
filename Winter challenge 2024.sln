@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32901.215
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Winter challenge 2024", "Winter challenge 2024\Winter challenge 2024.csproj", "{62416DCA-CC7A-4EAD-8C8F-6A669AF94C9D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{62416DCA-CC7A-4EAD-8C8F-6A669AF94C9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{62416DCA-CC7A-4EAD-8C8F-6A669AF94C9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{62416DCA-CC7A-4EAD-8C8F-6A669AF94C9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{62416DCA-CC7A-4EAD-8C8F-6A669AF94C9D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8724DC80-CBB0-41A4-82AF-9BDF5C1271E5}
+	EndGlobalSection
+EndGlobal
