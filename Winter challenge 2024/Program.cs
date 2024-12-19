@@ -104,8 +104,7 @@ class Player
                 }else
                 {
                     var possibleCoords = myOrgangs.SelectMany(organ => new[] { ( organ.x + 1, organ.y, organ), (organ.x, organ.y + 1, organ), (organ.x - 1, organ.y, organ), (organ.x, organ.y -1, organ) });
-                    var walls = entities.Where(e => e.type == "WALL");
-                    possibleCoords.Where(coord => walls.All(w => w.x != coord.Item1 && w.y != coord.Item2) && coord.Item1 >= 0 && coord.Item1 < width && coord.Item2 >= 0 && coord.Item2 < height);
+                    possibleCoords = possibleCoords.Where(coord => !entities.Any(w => w.x == coord.Item1 && w.y == coord.Item2) && coord.Item1 >= 0 && coord.Item1 < width && coord.Item2 >= 0 && coord.Item2 < height);
                     if(!possibleCoords.Any())
                     {
                         Console.WriteLine("WAIT");
