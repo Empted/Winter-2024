@@ -28,8 +28,8 @@ class Entity
         this.organRootId = organRootId;
     }
 
-    public int x {get;set;}
-    public int y {get;set;}
+    public int x { get; set; }
+    public int y { get; set; }
     public string type { get; set; }
     public int owner { get; set; }
     public int organId { get; set; }
@@ -108,6 +108,7 @@ class Player
         Util.width = width;
         Util.height = height;
         // game loop
+        bool builtSporerLastTurn = false;
         while (true)
         {
             var entities = new List<Entity>();
@@ -139,15 +140,43 @@ class Player
             int requiredActionsCount = int.Parse(Console.ReadLine()); // your number of organisms, output an action for each one in any order
             for (int i = 0; i < requiredActionsCount; i++)
             {
+                if (i > 0)
+                {
+                    Console.WriteLine($"WAIT");
+                    continue;
+                }
+
                 var resourcesA = entities.Where(e => e.type == "A");
                 var myOrgangs = entities.Where(e => e.owner == 1);
 
 
                 var organResourceDistance = resourcesA.SelectMany(resource => myOrgangs.Select(organ => (res: resource, organ: organ, distance: organ.DistanceTo(resource))));
-                if(organResourceDistance.Any() && myC == 1 && myD == 1)
+                if (myC >= 1 && myB >= 2 && myD >= 2 && myA >= 1 && !builtSporerLastTurn)
+                {
+                    Console.Error.WriteLine("SPORER TIME");
+                    var root = myOrgangs.Where(x => x.owner == 1 && x.type == "ROOT").First();
+                    var bestAdjacent = myOrgangs.SelectMany(o => o.GetAdjacent()).Distinct().Where(x => !entities.Any(e => e.x == x.x && e.y == x.y)).First();
+                    Console.WriteLine($"GROW {root.organId} {bestAdjacent.x} {bestAdjacent.y} SPORER E");
+                    builtSporerLastTurn = true;
+                }
+                else if (myC >= 1 && myB >= 1 && myD >= 1 && myA >= 1 && builtSporerLastTurn)
+                {
+                    Console.Error.WriteLine("NEW ROOT TIME");
+                    var sporer = myOrgangs.Where(x => x.owner == 1 && x.type == "SPORER").First();
+                    int y = sporer.y;
+                    int x = sporer.x;
+                    var resources = entities.Where(e => e.type == "A");
+                    while (Util.InBounds(x + 1, y) && !entities.Any(e => e.x == x + 1 && e.y == y) && !resources.Any(r => Util.Distance(r.x, x + 1, r.y, y) == 1))
+                    {
+                        x++;
+                    }
+                    Console.WriteLine($"SPORE {sporer.organId} {x} {y}");
+                    builtSporerLastTurn = false;
+                }
+                else if (organResourceDistance.Any() && myC >= 1 && myD >= 1)
                 {
                     Console.Error.WriteLine("GATHERING RESOURCE");
-                    if(organResourceDistance.Any(x => x.distance == 2))
+                    if (organResourceDistance.Any(x => x.distance == 2))
                     {
                         var canBuildHarvertFrom = organResourceDistance.FirstOrDefault(x => x.distance == 2);
                         var res = canBuildHarvertFrom.res;
@@ -161,20 +190,22 @@ class Player
                         var best = organResourceDistance.MinBy(x => x.distance);
                         Console.WriteLine($"GROW {best.organ.organId} {best.res.x} {best.res.y} BASIC");
                     }
-                }else
+                }
+                else
                 {
                     var enemyEntities = entities.Where(e => e.owner == 0);
 
                     var enemyAdjacent = enemyEntities.SelectMany(e => e.GetAdjacent()).Where(adj => !entities.Any(e => e.x == adj.x && e.y == adj.y)).Distinct();
                     var myAdjacent = myOrgangs.SelectMany(e => e.GetAdjacent()).Where(adj => !entities.Any(e => e.x == adj.x && e.y == adj.y)).Distinct();
                     var adjacent = enemyAdjacent.SelectMany(enemy => myAdjacent.Where(my => Util.Distance(enemy.x, my.x, enemy.y, my.y) == 1).Select(my => (my: my, enemy: enemy, d: enemy.d.Inverse())));
-                    
-                    if(adjacent.Any())
+
+                    if (adjacent.Any() && myC >= 1 && myB >= 1)
                     {
                         Console.Error.WriteLine("DEFENDING SPACE");
                         var best = adjacent.First();
                         Console.WriteLine($"GROW {best.my.parent.organId} {best.enemy.x} {best.enemy.y} TENTACLE {best.d}");
-                    }else
+                    }
+                    else
                     {
                         Console.Error.WriteLine("FREE GROWING");
 
